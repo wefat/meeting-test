@@ -1,0 +1,22 @@
+import {
+  LayoutGrid,
+  DoorOpen,
+  Calendar,
+  BarChart3,
+  Settings,
+  LucideIcon,
+} from "lucide-react";
+
+export interface UserNavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+export const userNavItems: UserNavItem[] = [
+  { href: "/user/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { href: "/user/dashboard/room-list", label: "Room List", icon: DoorOpen },
+  { href: "#", label: "My Bookings", icon: Calendar },
+  { href: "#", label: "Analytics", icon: BarChart3 },
+  { href: "#", label: "Settings", icon: Settings },
+];
