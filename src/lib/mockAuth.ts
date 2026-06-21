@@ -23,8 +23,8 @@ const users: (User & { password?: string })[] = [
   {
     id: 2,
     name: "Regular User",
-    email: "user@example.com",
-    password: "password123",
+    email: "we@hotmail.com",
+    password: "we",
     type: "user",
   },
 ];

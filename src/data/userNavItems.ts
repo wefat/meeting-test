@@ -15,8 +15,8 @@ export interface UserNavItem {
 
 export const userNavItems: UserNavItem[] = [
   { href: "/user/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { href: "/user/dashboard/room-list", label: "Room List", icon: DoorOpen },
-  { href: "#", label: "My Bookings", icon: Calendar },
-  { href: "#", label: "Analytics", icon: BarChart3 },
-  { href: "#", label: "Settings", icon: Settings },
+  { href: "/user/rooms/room-list", label: "Room List", icon: DoorOpen },
+  { href: "/user/bookings/", label: "My Bookings", icon: Calendar },
+  { href: "/user/room-list", label: "Analytics", icon: BarChart3 },
+  { href: "/user/room-list", label: "Settings", icon: Settings },
 ];

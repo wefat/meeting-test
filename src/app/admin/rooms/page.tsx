@@ -10,6 +10,7 @@ import {
   Eye,
   Image as ImageIcon,
 } from "lucide-react";
+import AdminSidebar from "@/components/layout/AdminSidebar";
 
 interface Room {
   id: string;
@@ -135,206 +136,225 @@ const RoomManagementPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              จัดการห้องประชุม
-            </h1>
-            <p className="text-gray-500 mt-1">
-              จำนวนห้องทั้งหมด: {filteredRooms.length} ห้อง
-            </p>
-          </div>
-          <a
-            href="/admin/rooms/create"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            <Plus size={18} />
-            <span className="text-sm font-medium">เพิ่มห้องใหม่</span>
-          </a>
-        </div>
+    <div className="flex bg-slate-50 min-h-screen font-sans">
+      {/* Sidebar คงที่ด้านซ้าย */}
+      <AdminSidebar />
 
-        {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-lg">
-              <Search size={18} className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="ค้นหาห้องประชุม..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent outline-none w-full text-sm"
-              />
+      {/* Main Content Container: จัดขนาดหลบแนว Sidebar และปรับ Margin/Padding ขอบซ้ายขวา */}
+      <div className="flex-1 ml-0 md:ml-64 min-w-0 transition-all duration-300 p-5">
+        <div className="w-full">
+          
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                จัดการห้องประชุม
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                จำนวนห้องทั้งหมด: <span className="font-semibold text-slate-700">{filteredRooms.length}</span> ห้อง
+              </p>
             </div>
-            <select
-              value={filterType}
-              onChange={(e) => {
-                setFilterType(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <a
+              href="/admin/rooms/create"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-sm shrink-0"
             >
-              {roomTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type === "all" ? "ประเภททั้งหมด" : type}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">สถานะทั้งหมด</option>
-              <option value="available">พร้อมใช้งาน</option>
-              <option value="maintenance">บำรุงรักษา</option>
-              <option value="inactive">ปิดใช้งาน</option>
-            </select>
+              <Plus size={16} />
+              <span>เพิ่มห้องใหม่</span>
+            </a>
           </div>
-        </div>
 
-        {/* Grid View */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          {paginatedRooms.map((room) => {
-            const { badge, label } = getStatusBadge(room.status);
-            return (
-              <div
-                key={room.id}
-                className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition"
-              >
-                {/* Room Image */}
-                <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
-                  <ImageIcon size={32} className="text-gray-400" />
-                </div>
-
-                {/* Room Content */}
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-bold text-gray-900">{room.name}</h3>
-                      <p className="text-xs text-gray-500">ID: {room.id}</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge}`}>
-                      {label}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-4 text-sm text-gray-700">
-                    <div className="flex justify-between">
-                      <span>ประเภท:</span>
-                      <span className="font-medium">{room.type}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>ชั้น:</span>
-                      <span className="font-medium">ชั้น {room.floor}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>ความจุ:</span>
-                      <span className="font-medium">{room.capacity} คน</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>การจอง:</span>
-                      <span className="font-medium text-blue-600">
-                        {room.bookings} ครั้ง
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Amenities */}
-                  <div className="mb-4">
-                    <p className="text-xs font-medium text-gray-600 mb-2">
-                      สิ่งอำนวยความสะดวก:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {room.amenities.map((amenity) => (
-                        <span
-                          key={amenity}
-                          className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
-                        >
-                          {amenity}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-4 border-t">
-                    <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm">
-                      <Eye size={16} />
-                      ดู
-                    </button>
-                    <a
-                      href={`/admin/rooms/${room.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm"
-                    >
-                      <Edit size={16} />
-                      แก้ไข
-                    </a>
-                    <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition text-sm">
-                      <Trash2 size={16} />
-                      ลบ
-                    </button>
-                  </div>
-                </div>
+          {/* Filters and Search */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex-1 flex items-center gap-2 bg-slate-100 px-4 py-2.5 rounded-lg border border-transparent focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <Search size={18} className="text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="ค้นหาห้องประชุม..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent outline-none w-full text-sm text-slate-800 placeholder-gray-400"
+                />
               </div>
-            );
-          })}
-        </div>
-
-        {paginatedRooms.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            ไม่พบข้อมูลห้องประชุม
-          </div>
-        )}
-
-        {/* Pagination */}
-        {filteredRooms.length > 0 && (
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              แสดง {startIndex + 1} ถึง{" "}
-              {Math.min(startIndex + itemsPerPage, filteredRooms.length)} จาก{" "}
-              {filteredRooms.length} ห้อง
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg font-medium transition ${
-                    currentPage === page
-                      ? "bg-blue-600 text-white"
-                      : "border border-gray-300 hover:bg-gray-50"
-                  }`}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <select
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer min-w-[160px]"
                 >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition"
-              >
-                <ChevronRight size={18} />
-              </button>
+                  {roomTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type === "all" ? "ประเภททั้งหมด" : type}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer min-w-[140px]"
+                >
+                  <option value="all">สถานะทั้งหมด</option>
+                  <option value="available">พร้อมใช้งาน</option>
+                  <option value="maintenance">บำรุงรักษา</option>
+                  <option value="inactive">ปิดใช้งาน</option>
+                </select>
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Grid View */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {paginatedRooms.map((room) => {
+              const { badge, label } = getStatusBadge(room.status);
+              return (
+                <div
+                  key={room.id}
+                  className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md hover:border-slate-300/70 transition-all flex flex-col"
+                >
+                  {/* Room Image */}
+                  <div className="w-full h-44 bg-slate-50 border-b border-slate-100 flex items-center justify-center shrink-0">
+                    <ImageIcon size={36} className="text-slate-300" />
+                  </div>
+
+                  {/* Room Content */}
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start gap-2 mb-3">
+                        <div>
+                          <h3 className="font-bold text-slate-900 text-base leading-snug">{room.name}</h3>
+                          <p className="text-xs text-gray-400 font-medium mt-0.5">ID: {room.id}</p>
+                        </div>
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide shrink-0 ${badge}`}>
+                          {label}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 mb-4 text-sm text-slate-600">
+                        <div className="flex justify-between border-b border-slate-50 pb-1.5">
+                          <span className="text-gray-400">ประเภท:</span>
+                          <span className="font-semibold text-slate-800">{room.type}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-50 pb-1.5">
+                          <span className="text-gray-400">ชั้น:</span>
+                          <span className="font-medium text-slate-800">ชั้น {room.floor}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-50 pb-1.5">
+                          <span className="text-gray-400">ความจุ:</span>
+                          <span className="font-medium text-slate-800">{room.capacity} คน</span>
+                        </div>
+                        <div className="flex justify-between pb-1">
+                          <span className="text-gray-400">การจองทั้งหมด:</span>
+                          <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs">
+                            {room.bookings} ครั้ง
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Amenities */}
+                      <div className="mb-5">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                          สิ่งอำนวยความสะดวก:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {room.amenities.map((amenity) => (
+                            <span
+                              key={amenity}
+                              className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium"
+                            >
+                              {amenity}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-4 border-t border-slate-100 mt-auto">
+                      <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all active:scale-95 shadow-2xs">
+                        <Eye size={14} />
+                        <span>ดู</span>
+                      </button>
+                      <a
+                        href={`/admin/rooms/${room.id}`}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all active:scale-95 shadow-2xs"
+                      >
+                        <Edit size={14} />
+                        <span>แก้ไข</span>
+                      </a>
+                      <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 text-xs font-semibold transition-all active:scale-95 shadow-2xs">
+                        <Trash2 size={14} />
+                        <span>ลบ</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Empty State */}
+          {paginatedRooms.length === 0 && (
+            <div className="text-center py-16 text-slate-400 font-medium bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
+              ไม่พบข้อมูลห้องประชุมที่ต้องการค้นหา
+            </div>
+          )}
+
+          {/* Pagination */}
+          {filteredRooms.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pb-8">
+              <div className="text-sm text-gray-500 font-medium order-2 sm:order-1">
+                แสดง <span className="text-slate-800 font-semibold">{startIndex + 1}</span> ถึง{" "}
+                <span className="text-slate-800 font-semibold">
+                  {Math.min(startIndex + itemsPerPage, filteredRooms.length)}
+                </span> จาก{" "}
+                <span className="text-slate-800 font-semibold">{filteredRooms.length}</span> ห้อง
+              </div>
+              
+              <div className="flex items-center gap-1.5 order-1 sm:order-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition-all shadow-sm"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-lg text-sm font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-blue-600 text-white shadow-sm shadow-blue-100"
+                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="p-2 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white transition-all shadow-sm"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
