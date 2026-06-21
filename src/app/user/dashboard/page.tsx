@@ -18,22 +18,11 @@ import {
   BarChart2,
   Trash2,
   Eye,
+  Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { getAuthUser, User } from "../../../lib/mockAuth";
-import { bookings, notifications, rooms } from "../../../data/mockData";
 import SidebarNav from "@/components/layout/NavbarUser";
-
-interface Booking {
-  id: number;
-  roomId: number;
-  userId: number;
-  startTime: Date;
-  endTime: Date;
-  title: string;
-  notes?: string | null;
-  participants: any;
-}
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -41,6 +30,44 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeNotification, setActiveNotification] = useState(0);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [localNotifications, setLocalNotifications] = useState<any[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const loadLocalNotifs = () => {
+      try {
+        const stored = localStorage.getItem("userNotifications");
+        if (stored) {
+          const all = JSON.parse(stored);
+          const filtered = all.filter((n: any) => n.targetUser === user.name);
+          setLocalNotifications(filtered);
+        }
+      } catch (err) {
+        console.error("Error loading user notifications:", err);
+      }
+    };
+    loadLocalNotifs();
+    window.addEventListener("storage", loadLocalNotifs);
+    return () => window.removeEventListener("storage", loadLocalNotifs);
+  }, [user]);
+
+  const handleClearUserNotifications = () => {
+    if (!user) return;
+    try {
+      const stored = localStorage.getItem("userNotifications");
+      if (stored) {
+        const all = JSON.parse(stored);
+        const remaining = all.filter((n: any) => n.targetUser !== user.name);
+        localStorage.setItem("userNotifications", JSON.stringify(remaining));
+        setLocalNotifications([]);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     const authUser = getAuthUser();
@@ -48,51 +75,123 @@ export default function UserDashboard() {
       router.push("/login");
     } else {
       setUser(authUser);
-      setLoading(false);
+      
+      const fetchData = async () => {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+          const [roomsRes, bookingsRes] = await Promise.all([
+            fetch(`${apiUrl}/api/admin/rooms`),
+            fetch(`${apiUrl}/api/admin/bookings`)
+          ]);
+          
+          if (roomsRes.ok) {
+            const roomsData = await roomsRes.json();
+            setRooms(roomsData);
+          }
+          if (bookingsRes.ok) {
+            const bookingsData = await bookingsRes.json();
+            setBookings(bookingsData);
+          }
+        } catch (err) {
+          console.error("Error fetching dashboard data:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
     }
   }, [router]);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?")) return;
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/admin/bookings/${bookingId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "cancelled"
+        })
+      });
+      if (res.ok) {
+        alert("ยกเลิกการจองสำเร็จ");
+        setBookings((prev) =>
+          prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" } : b))
+        );
+      } else {
+        alert("ไม่สามารถยกเลิกการจองได้");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("เกิดข้อผิดพลาดในการยกเลิกการจอง");
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50 text-sm font-medium text-slate-500">
-        Loading...
+        กำลังโหลดข้อมูล...
       </div>
     );
   }
 
   const userBookings = bookings.filter(
-    (booking) => booking.userId === user?.id,
-  );
-  const userNotifications = notifications.filter(
-    (notification) => !notification.read,
+    (booking) => booking.organizer === user?.name,
   );
 
-  const getRoomData = (roomId: number) => {
+  const userNotifications = [
+    ...localNotifications,
+    ...userBookings
+      .filter((b) => b.status === "cancelled")
+      .map((b) => ({
+        id: b.id,
+        message: `การจองห้อง ${b.roomName} ในวันที่ ${b.date} (${b.timeStart} - ${b.timeEnd}) ถูกยกเลิกแล้ว`,
+        read: false,
+      }))
+  ];
+
+  const getRoomData = (roomId: string) => {
     const room = rooms.find((r) => r.id === roomId);
-    return room ? room : { name: "Unknown Room", image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop" };
+    return room ? room : { name: "Unknown Room", image: "" };
   };
 
-  const upcomingBookings = userBookings.slice(0, 3).map((booking: any) => {
-    const bookingDate = new Date(booking.startTime);
-    const time = bookingDate.toLocaleTimeString("th-TH", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const currentTimeStr = now.toTimeString().split(" ")[0].substring(0, 5);
+
+  const upcomingBookings = userBookings
+    .filter((b) => {
+      if (b.status === "cancelled") return false;
+      return b.date > todayStr || (b.date === todayStr && b.timeEnd > currentTimeStr);
+    })
+    .slice(0, 3)
+    .map((booking: any) => {
+      const roomData = getRoomData(booking.roomId);
+      const time = `${booking.timeStart} - ${booking.timeEnd}`;
+      const startHour = parseInt(booking.timeStart.split(":")[0]);
+      const period = startHour >= 12 ? "PM" : "AM";
+      
+      return {
+        id: booking.id,
+        time,
+        period,
+        title: booking.title,
+        description: `ผู้จัด: ${booking.organizer}`,
+        roomName: roomData.name || booking.roomName,
+        roomImage: roomData.image || "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
+        participants: booking.participants || 1,
+        date: booking.date,
+        status: booking.status,
+      };
     });
-    const period = bookingDate.getHours() >= 12 ? "PM" : "AM";
-    const roomData = getRoomData(booking.roomId);
-    
-    return {
-      id: booking.id,
-      time,
-      period,
-      title: booking.title,
-      description: booking.notes || "ไม่มีหมายเหตุ",
-      roomName: roomData.name,
-      roomImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-      participants: booking.participants?.length || 1,
-    };
-  });
+
+  const totalCount = userBookings.length;
+  const completedCount = userBookings.filter(
+    (b) => b.status === "confirmed" && (b.date < todayStr || (b.date === todayStr && b.timeEnd <= currentTimeStr))
+  ).length;
+  const cancelledCount = userBookings.filter((b) => b.status === "cancelled").length;
 
   const suggestions = [
     { icon: MapPin, label: "หาห้องประชุม", color: "bg-red-50 text-red-600 border border-red-100" },
@@ -127,10 +226,48 @@ export default function UserDashboard() {
             </div>
             
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
-              <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors relative text-slate-500">
-                <Bell size={18} />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors relative text-slate-500"
+                >
+                  <Bell size={18} />
+                  {userNotifications.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+
+                {notificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg py-2 z-30">
+                    <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                      <span className="font-bold text-xs text-slate-700">การแจ้งเตือน</span>
+                      {userNotifications.length > 0 && (
+                        <button 
+                          onClick={handleClearUserNotifications}
+                          className="text-[10px] font-bold text-blue-600 hover:underline"
+                        >
+                          ล้างทั้งหมด
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-60 overflow-y-auto divide-y divide-slate-50 text-left">
+                      {userNotifications.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-slate-400 text-xs font-medium">
+                          ไม่มีข้อความแจ้งเตือนใหม่
+                        </div>
+                      ) : (
+                        userNotifications.map((n, idx) => (
+                          <div key={n.id || idx} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                              {n.message}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500 hidden sm:block">
                 <Settings size={18} />
               </button>
@@ -184,19 +321,19 @@ export default function UserDashboard() {
                   <div className="text-slate-400 font-semibold text-xs uppercase tracking-wider mb-1">
                     การจองทั้งหมด
                   </div>
-                  <div className="text-3xl font-black text-slate-900 tracking-tight">6</div>
+                  <div className="text-3xl font-black text-slate-900 tracking-tight">{totalCount}</div>
                 </div>
                 <div className="bg-white rounded-xl p-5 border border-slate-200 border-l-4 border-l-emerald-500 shadow-2xs">
                   <div className="text-slate-400 font-semibold text-xs uppercase tracking-wider mb-1">
                     เสร็จสิ้น
                   </div>
-                  <div className="text-3xl font-black text-slate-900 tracking-tight">3</div>
+                  <div className="text-3xl font-black text-slate-900 tracking-tight">{completedCount}</div>
                 </div>
                 <div className="bg-white rounded-xl p-5 border border-slate-200 border-l-4 border-l-red-500 shadow-2xs">
                   <div className="text-slate-400 font-semibold text-xs uppercase tracking-wider mb-1">
                     ยกเลิกแล้ว
                   </div>
-                  <div className="text-3xl font-black text-slate-900 tracking-tight">1</div>
+                  <div className="text-3xl font-black text-slate-900 tracking-tight">{cancelledCount}</div>
                 </div>
               </div>
             </section>
@@ -227,12 +364,16 @@ export default function UserDashboard() {
                         className="bg-white rounded-xl border border-slate-200 shadow-xs hover:shadow-sm hover:border-slate-300 transition-all flex flex-col sm:flex-row overflow-hidden group"
                       >
                         {/* รูปภาพห้องพรีวิวด้านข้าง */}
-                        <div className="h-32 sm:h-auto sm:w-44 relative bg-slate-100 shrink-0 overflow-hidden border-b sm:border-b-0 sm:border-r border-slate-100">
-                          <img 
-                            src={booking.roomImage} 
-                            alt={booking.roomName} 
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
+                        <div className="h-32 sm:h-auto sm:w-44 relative bg-slate-100 shrink-0 overflow-hidden border-b sm:border-b-0 sm:border-r border-slate-100 flex items-center justify-center">
+                          {booking.roomImage ? (
+                            <img 
+                              src={booking.roomImage} 
+                              alt={booking.roomName} 
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <ImageIcon size={32} className="text-slate-300" />
+                          )}
                           <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/70 backdrop-blur-2xs text-white text-[10px] font-bold">
                             {booking.time} {booking.period}
                           </span>
@@ -245,15 +386,19 @@ export default function UserDashboard() {
                               <h3 className="font-bold text-slate-900 text-sm truncate group-hover:text-blue-600 transition-colors">
                                 {booking.roomName}
                               </h3>
-                              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-100 shrink-0">
-                                ยืนยันแล้ว
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                                booking.status === "confirmed" 
+                                  ? "bg-green-50 text-green-700 border border-green-100" 
+                                  : "bg-yellow-50 text-yellow-700 border border-yellow-100"
+                              }`}>
+                                {booking.status === "confirmed" ? "ยืนยันแล้ว" : "รอยืนยัน"}
                               </span>
                             </div>
                             <p className="text-xs font-semibold text-slate-800 truncate">{booking.title}</p>
                             <p className="text-[11px] text-slate-400 font-medium truncate">{booking.description}</p>
                           </div>
                           
-                          {/* แถบไอคอนรายละเอียดพิกัดล่างการ์ด */}
+                          {/* แทบไอคอนรายละเอียดพิกัดล่างการ์ด */}
                           <div className="flex items-center justify-between gap-4 pt-3 mt-3 border-t border-slate-50 text-xs font-semibold text-slate-500">
                             <div className="flex items-center gap-4">
                               <span className="flex items-center gap-1">
@@ -268,10 +413,18 @@ export default function UserDashboard() {
                             
                             {/* บล็อกควบคุมจัดการข้อมูล (ดูรายละเอียด / ลบรายการ) */}
                             <div className="flex items-center gap-1.5">
-                              <button title="ดูรายละเอียด" className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-blue-600 rounded-md transition-colors">
+                              <button 
+                                onClick={() => router.push(`/user/bookings/${booking.id}`)}
+                                title="ดูรายละเอียด" 
+                                className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-blue-600 rounded-md transition-colors"
+                              >
                                 <Eye size={15} />
                               </button>
-                              <button title="ยกเลิกการจอง" className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-md transition-colors">
+                              <button 
+                                onClick={() => handleCancelBooking(booking.id)}
+                                title="ยกเลิกการจอง" 
+                                className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-md transition-colors"
+                              >
                                 <Trash2 size={15} />
                               </button>
                             </div>

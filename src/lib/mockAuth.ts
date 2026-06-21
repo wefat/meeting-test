@@ -12,12 +12,12 @@ export interface User {
 }
 
 // Mock user accounts
-const users: (User & { password?: string })[] = [
+export const users: (User & { password?: string })[] = [
   {
     id: 1,
     name: "Admin User",
     email: "admin@example.com",
-    password: "password123",
+    password: "123",
     type: "admin",
   },
   {
@@ -25,6 +25,41 @@ const users: (User & { password?: string })[] = [
     name: "Regular User",
     email: "we@hotmail.com",
     password: "we",
+    type: "user",
+  },
+  {
+    id: 3,
+    name: "สมชาย ทดสอบ",
+    email: "somchai@example.com",
+    password: "123",
+    type: "user",
+  },
+  {
+    id: 4,
+    name: "มานะ ทดสอบ",
+    email: "mana@example.com",
+    password: "123",
+    type: "user",
+  },
+  {
+    id: 5,
+    name: "ศรีนวล ทดสอบ",
+    email: "srinuan@example.com",
+    password: "123",
+    type: "user",
+  },
+  {
+    id: 6,
+    name: "อนุวัติ ทดสอบ",
+    email: "anuvat@example.com",
+    password: "123",
+    type: "user",
+  },
+  {
+    id: 7,
+    name: "เสริมศรี ทดสอบ",
+    email: "sermsri@example.com",
+    password: "123",
     type: "user",
   },
 ];

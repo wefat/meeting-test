@@ -13,6 +13,11 @@ import {
   Wind,
   Coffee,
   Zap,
+  Tv,
+  Laptop,
+  Video,
+  Volume2,
+  Image as ImageIcon,
 } from "lucide-react";
 import SidebarNav from "@/components/layout/NavbarUser";
 
@@ -21,117 +26,75 @@ interface Room {
   name: string;
   floor: number;
   capacity: number;
-  pricePerHour: number;
-  image: string;
+  type: string;
+  description: string;
+  status: "available" | "maintenance" | "inactive";
+  image?: string;
   amenities: string[];
-  availability: number;
 }
-
-const mockRooms: Room[] = [
-  {
-    id: "1",
-    name: "Skyline Boardroom",
-    floor: 12,
-    capacity: 12,
-    pricePerHour: 1500,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    amenities: ["wifi", "projector", "ac"],
-    availability: 8,
-  },
-  {
-    id: "2",
-    name: "Creative Hub",
-    floor: 8,
-    capacity: 8,
-    pricePerHour: 800,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    amenities: ["wifi", "whiteboard"],
-    availability: 5,
-  },
-  {
-    id: "3",
-    name: "Grand Hall",
-    floor: 5,
-    capacity: 50,
-    pricePerHour: 3500,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    amenities: ["wifi", "projector", "ac", "catering"],
-    availability: 3,
-  },
-  {
-    id: "4",
-    name: "Focus Pod 04",
-    floor: 2,
-    capacity: 2,
-    pricePerHour: 300,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    amenities: ["wifi", "ac"],
-    availability: 12,
-  },
-  {
-    id: "5",
-    name: "North Wing B",
-    floor: 3,
-    capacity: 6,
-    pricePerHour: 600,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    amenities: ["wifi", "projector"],
-    availability: 9,
-  },
-  {
-    id: "6",
-    name: "Summit Suite",
-    floor: 15,
-    capacity: 15,
-    pricePerHour: 2000,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    amenities: ["wifi", "projector", "ac", "coffee"],
-    availability: 6,
-  },
-];
 
 const amenityIcons: Record<string, React.ReactNode> = {
   wifi: <Wifi size={16} />,
   projector: <Monitor size={16} />,
   ac: <Wind size={16} />,
-  catering: <Coffee size={16} />,
+  tv: <Tv size={16} />,
   whiteboard: <Zap size={16} />,
+  computer: <Laptop size={16} />,
+  "coffee station": <Coffee size={16} />,
+  "video conference": <Video size={16} />,
+  "sound system": <Volume2 size={16} />,
+  "interactive board": <Zap size={16} />,
 };
 
 export default function UserRoomListPage() {
   const router = useRouter();
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [capacityFilter, setCapacityFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState("11/24/2025");
   const [selectedTime, setSelectedTime] = useState("08:00 - 08:30");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/admin/rooms`);
+        if (res.ok) {
+          const data = await res.json();
+          setRooms(data);
+        }
+      } catch (err) {
+        console.error("Error fetching rooms:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRooms();
+  }, []);
+
   const filteredRooms = useMemo(() => {
-    let rooms = mockRooms;
+    let filtered = rooms;
 
     if (searchTerm) {
-      rooms = rooms.filter((room) =>
-        room.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      filtered = filtered.filter((room) =>
+        room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        room.type.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (capacityFilter !== "all") {
       const [min, max] = capacityFilter.split("-").map(Number);
-      rooms = rooms.filter((room) =>
+      filtered = filtered.filter((room) =>
         max
           ? room.capacity >= min && room.capacity <= max
-          : room.capacity >= min,
+          : room.capacity >= min
       );
     }
 
-    return rooms;
-  }, [searchTerm, capacityFilter]);
+    return filtered;
+  }, [rooms, searchTerm, capacityFilter]);
 
   const handleRoomClick = (roomId: string) => {
     router.push(`/user/rooms/${roomId}`);
@@ -257,73 +220,91 @@ export default function UserRoomListPage() {
             </div>
 
             {/* Room Grid Display Card */}
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredRooms.map((room) => (
-                <div
-                  key={room.id}
-                  onClick={() => handleRoomClick(room.id)}
-                  className="group cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-200 shadow-xs transition-all hover:shadow-md hover:border-slate-300 flex flex-col"
-                >
-                  {/* Container รูปห้อง */}
-                  <div className="relative overflow-hidden bg-slate-100 h-48 border-b border-slate-100 shrink-0">
-                    <img
-                      src={room.image}
-                      alt={room.name}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute top-3 right-3 rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-2xs uppercase tracking-wide">
-                      {room.availability} Available
-                    </div>
-                  </div>
-
-                  {/* รายละเอียดเนื้อหาข้อมูลการจองห้อง */}
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="mb-3 text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {room.name}
-                      </h3>
-
-                      {/* รายละเอียดชั้นและความจุ */}
-                      <div className="mb-4 space-y-2 text-sm text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <MapPin size={15} className="text-slate-400 shrink-0" />
-                          <span className="font-medium">Floor {room.floor}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users size={15} className="text-slate-400 shrink-0" />
-                          <span className="font-medium">{room.capacity} People Capacity</span>
-                        </div>
-                      </div>
-
-                      {/* อุปกรณ์อำนวยความสะดวก Amenities Icons */}
-                      <div className="mb-5">
-                        <div className="flex flex-wrap gap-1.5">
-                          {room.amenities.slice(0, 3).map((amenity) => (
-                            <div
-                              key={amenity}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 border border-transparent transition-colors hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100"
-                              title={amenity}
-                            >
-                              {amenityIcons[amenity] || <Zap size={14} />}
-                            </div>
-                          ))}
-                          {room.amenities.length > 3 && (
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-150 text-[10px] font-bold text-slate-500">
-                              +{room.amenities.length - 3}
-                            </div>
-                          )}
-                        </div>
+            {loading ? (
+              <div className="text-center py-16 text-slate-400 font-medium bg-white rounded-xl border border-slate-200 shadow-sm col-span-full">
+                กำลังโหลดข้อมูลห้องประชุม...
+              </div>
+            ) : (
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full">
+                {filteredRooms.map((room) => (
+                  <div
+                    key={room.id}
+                    onClick={() => handleRoomClick(room.id)}
+                    className="group cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-200 shadow-xs transition-all hover:shadow-md hover:border-slate-300 flex flex-col"
+                  >
+                    {/* Container รูปห้อง */}
+                    <div className="relative overflow-hidden bg-slate-100 h-48 border-b border-slate-100 shrink-0 flex items-center justify-center">
+                      {room.image ? (
+                        <img
+                          src={room.image}
+                          alt={room.name}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <ImageIcon size={36} className="text-slate-300" />
+                      )}
+                      <div className={`absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white shadow-2xs uppercase tracking-wide ${
+                        room.status === "available" ? "bg-green-600" : room.status === "maintenance" ? "bg-yellow-600" : "bg-slate-500"
+                      }`}>
+                        {room.status === "available" ? "พร้อมใช้งาน" : room.status === "maintenance" ? "บำรุงรักษา" : "ปิดใช้งาน"}
                       </div>
                     </div>
 
-                    {/* ปุ่ม Action ท้ายการ์ดแต่ละใบ */}
-                    <button className="w-full rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-700 active:scale-98 mt-auto shadow-2xs">
-                      View Details
-                    </button>
+                    {/* รายละเอียดเนื้อหาข้อมูลการจองห้อง */}
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="mb-2 text-xs font-semibold text-blue-600 uppercase tracking-wide">
+                          {room.type}
+                        </div>
+                        <h3 className="mb-3 text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                          {room.name}
+                        </h3>
+
+                        {/* รายละเอียดชั้นและความจุ */}
+                        <div className="mb-4 space-y-2 text-sm text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <MapPin size={15} className="text-slate-400 shrink-0" />
+                            <span className="font-medium">Floor {room.floor}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Users size={15} className="text-slate-400 shrink-0" />
+                            <span className="font-medium">{room.capacity} People Capacity</span>
+                          </div>
+                        </div>
+
+                        {/* อุปกรณ์อำนวยความสะดวก Amenities Icons */}
+                        <div className="mb-5">
+                          <div className="flex flex-wrap gap-1.5">
+                            {room.amenities.slice(0, 3).map((amenity) => {
+                              const lowerAmenity = amenity.toLowerCase();
+                              return (
+                                <div
+                                  key={amenity}
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 border border-transparent transition-colors hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100"
+                                  title={amenity}
+                                >
+                                  {amenityIcons[lowerAmenity] || <Zap size={14} />}
+                                </div>
+                              );
+                            })}
+                            {room.amenities.length > 3 && (
+                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-150 text-[10px] font-bold text-slate-500">
+                                +{room.amenities.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ปุ่ม Action ท้ายการ์ดแต่ละใบ */}
+                      <button className="w-full rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-700 active:scale-98 mt-auto shadow-2xs">
+                        View Details
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Empty Search Fallback State */}
             {filteredRooms.length === 0 && (

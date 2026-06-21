@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { getAuthUser } from "@/lib/mockAuth";
 import {
   Calendar,
   Clock,
@@ -14,107 +16,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import SidebarNav from "@/components/layout/NavbarUser";
-
-interface Booking {
-  id: string;
-  roomName: string;
-  roomImage: string;
-  bookingTitle: string;
-  date: string;
-  time: string;
-  participants: number;
-  status: "upcoming" | "history" | "cancelled";
-  statusLabel: string;
-  organizer: string;
-  cost: number;
-}
-
-const SAMPLE_BOOKINGS: Booking[] = [
-  {
-    id: "1",
-    roomName: "Skyline Boardroom",
-    roomImage:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-    bookingTitle: "Weekly Sync",
-    date: "24 พฤศจิกายน 2568",
-    time: "08:00 - 10:30",
-    participants: 8,
-    status: "upcoming",
-    statusLabel: "ยืนยันแล้ว",
-    organizer: "สมชาย ม...",
-    cost: 5000,
-  },
-  {
-    id: "2",
-    roomName: "Innovation Hub",
-    roomImage:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-    bookingTitle: "Brainstorming Session",
-    date: "25 พฤศจิกายน 2568",
-    time: "13:00 - 15:00",
-    participants: 12,
-    status: "upcoming",
-    statusLabel: "รอยืนยัน",
-    organizer: "วิจัย ค...",
-    cost: 5000,
-  },
-  {
-    id: "3",
-    roomName: "Quartz Meeting Hall",
-    roomImage:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-    bookingTitle: "Client Presentation",
-    date: "23 พฤศจิกายน 2568",
-    time: "10:30 - 12:00",
-    participants: 6,
-    status: "cancelled",
-    statusLabel: "ยกเลิกแล้ว",
-    organizer: "สมชาย ม...",
-    cost: 3750,
-  },
-  {
-    id: "4",
-    roomName: "Skyline Boardroom",
-    roomImage:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-    bookingTitle: "Team Meeting",
-    date: "20 พฤศจิกายน 2568",
-    time: "09:00 - 10:30",
-    participants: 5,
-    status: "history",
-    statusLabel: "เสร็จสิ้น",
-    organizer: "สมชาย ม...",
-    cost: 3750,
-  },
-  {
-    id: "5",
-    roomName: "Creative Hub",
-    roomImage:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-    bookingTitle: "Design Workshop",
-    date: "18 พฤศจิกายน 2568",
-    time: "14:00 - 16:00",
-    participants: 10,
-    status: "history",
-    statusLabel: "เสร็จสิ้น",
-    organizer: "วิจัย ค...",
-    cost: 5000,
-  },
-  {
-    id: "6",
-    roomName: "Zen Garden Room",
-    roomImage:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-    bookingTitle: "One-on-One",
-    date: "15 พฤศจิกายน 2568",
-    time: "11:00 - 12:00",
-    participants: 2,
-    status: "history",
-    statusLabel: "เสร็จสิ้น",
-    organizer: "สมชาย ม...",
-    cost: 2500,
-  },
-];
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -130,23 +31,131 @@ const getStatusColor = (status: string) => {
 };
 
 export default function MyBookingsPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
 
-  // กรองข้อมูลตามคำค้นหา
-  const searchedBookings = SAMPLE_BOOKINGS.filter(
+  useEffect(() => {
+    const authUser = getAuthUser();
+    if (!authUser) {
+      router.push("/login");
+    } else {
+      setUser(authUser);
+      
+      const fetchData = async () => {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+          const [roomsRes, bookingsRes] = await Promise.all([
+            fetch(`${apiUrl}/api/admin/rooms`),
+            fetch(`${apiUrl}/api/admin/bookings`)
+          ]);
+          
+          if (roomsRes.ok) {
+            const roomsData = await roomsRes.json();
+            setRooms(roomsData);
+          }
+          if (bookingsRes.ok) {
+            const bookingsData = await bookingsRes.json();
+            setBookings(bookingsData);
+          }
+        } catch (err) {
+          console.error("Error fetching bookings page data:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchData();
+    }
+  }, [router]);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?")) return;
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/admin/bookings/${bookingId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "cancelled"
+        })
+      });
+      if (res.ok) {
+        alert("ยกเลิกการจองสำเร็จ");
+        setBookings((prev) =>
+          prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" } : b))
+        );
+      } else {
+        alert("ไม่สามารถยกเลิกการจองได้");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("เกิดข้อผิดพลาดในการยกเลิกการจอง");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f8fafc]">
+        <p className="text-slate-600 font-medium">กำลังโหลดข้อมูลการจอง...</p>
+      </div>
+    );
+  }
+
+  // Filter bookings for logged-in user
+  const userBookings = bookings.filter((b) => b.organizer === user?.name);
+
+  // Map database bookings to page format
+  const mappedBookings = userBookings.map((b) => {
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    const currentTimeStr = now.toTimeString().split(" ")[0].substring(0, 5);
+
+    let status = "history";
+    let statusLabel = "เสร็จสิ้น";
+
+    if (b.status === "cancelled") {
+      status = "cancelled";
+      statusLabel = "ยกเลิกแล้ว";
+    } else {
+      const isPast = b.date < todayStr || (b.date === todayStr && b.timeEnd <= currentTimeStr);
+      if (!isPast) {
+        status = "upcoming";
+        statusLabel = b.status === "confirmed" ? "ยืนยันแล้ว" : "รอยืนยัน";
+      }
+    }
+
+    return {
+      id: b.id,
+      roomName: b.roomName,
+      bookingTitle: b.title,
+      date: b.date,
+      time: `${b.timeStart} - ${b.timeEnd}`,
+      participants: b.participants,
+      status,
+      statusLabel,
+    };
+  });
+
+  // Filter by search
+  const searchedBookings = mappedBookings.filter(
     (booking) =>
       booking.roomName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.bookingTitle.toLowerCase().includes(searchTerm.toLowerCase()),
+      booking.bookingTitle.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // แยกประเภทข้อมูลหลังค้นหา
   const upcomingBookings = searchedBookings.filter(
-    (b) => b.status === "upcoming",
+    (b) => b.status === "upcoming"
   );
 
   const historyBookings = searchedBookings.filter(
-    (b) => b.status === "history" || b.status === "cancelled",
+    (b) => b.status === "history" || b.status === "cancelled"
   );
 
   return (
@@ -202,8 +211,72 @@ export default function MyBookingsPage() {
 
         {/* Scrollable Container ของข้อมูลรายงาน */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          <div className="w-full">
-            {/* 1. ส่วนประวัติการจองห้องประชุม (History Bookings) แสดงผลในรูปแบบตารางโปร่งสะอาดตา */}
+          <div className="w-full space-y-8">
+            {/* 1. การจองที่กำลังจะมาถึง (Upcoming Bookings) */}
+            <section className="space-y-4">
+              <h2 className="text-base font-bold text-slate-900 tracking-wide flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                <span>การจองที่กำลังจะมาถึง</span>
+              </h2>
+
+              <div className="bg-white rounded-xl shadow-2xs border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full whitespace-nowrap text-sm text-left border-collapse">
+                    <thead className="bg-slate-50/80 border-b border-slate-200 text-gray-500">
+                      <tr>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">ห้อง</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">หัวข้อ</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">วันที่</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">เวลา</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">ผู้เข้าร่วม</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">สถานะ</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide text-center w-24">การจัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                      {upcomingBookings.length > 0 ? (
+                        upcomingBookings.map((booking) => (
+                          <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-slate-900">{booking.roomName}</td>
+                            <td className="px-6 py-4 text-slate-600 font-medium">{booking.bookingTitle}</td>
+                            <td className="px-6 py-4 text-slate-600">{booking.date}</td>
+                            <td className="px-6 py-4 text-slate-500 font-mono text-xs">{booking.time}</td>
+                            <td className="px-6 py-4 text-slate-600 font-medium">{booking.participants} คน</td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold ${getStatusColor(booking.status)}`}>
+                                {booking.statusLabel}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <Link href={`/user/bookings/${booking.id}`} title="ดูรายละเอียด" className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors inline-block">
+                                  <Eye size={15} />
+                                </Link>
+                                <button 
+                                  onClick={() => handleCancelBooking(booking.id)}
+                                  title="ยกเลิกการจอง" 
+                                  className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium bg-white">
+                            ไม่มีรายการจองที่กำลังจะมาถึง
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            {/* 2. ส่วนประวัติการจองห้องประชุม (History Bookings) */}
             <section className="space-y-4">
               <h2 className="text-base font-bold text-slate-900 tracking-wide flex items-center gap-2">
                 <BarChart2 className="w-5 h-5 text-blue-600" />
@@ -215,66 +288,32 @@ export default function MyBookingsPage() {
                   <table className="w-full whitespace-nowrap text-sm text-left border-collapse">
                     <thead className="bg-slate-50/80 border-b border-slate-200 text-gray-500">
                       <tr>
-                        <th className="px-6 py-3.5 font-semibold tracking-wide">
-                          ห้อง
-                        </th>
-                        <th className="px-6 py-3.5 font-semibold tracking-wide">
-                          หัวข้อ
-                        </th>
-                        <th className="px-6 py-3.5 font-semibold tracking-wide">
-                          วันที่
-                        </th>
-                        <th className="px-6 py-3.5 font-semibold tracking-wide">
-                          เวลา
-                        </th>
-                        <th className="px-6 py-3.5 font-semibold tracking-wide">
-                          ผู้เข้าร่วม
-                        </th>
-                        <th className="px-6 py-3.5 font-semibold tracking-wide">
-                          สถานะ
-                        </th>
-                        <th className="px-6 py-3.5 font-semibold tracking-wide text-center w-24">
-                          การจัดการ
-                        </th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">ห้อง</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">หัวข้อ</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">วันที่</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">เวลา</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">ผู้เข้าร่วม</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide">สถานะ</th>
+                        <th className="px-6 py-3.5 font-semibold tracking-wide text-center w-24">การจัดการ</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
                       {historyBookings.length > 0 ? (
                         historyBookings.map((booking) => (
-                          <tr
-                            key={booking.id}
-                            className="hover:bg-slate-50/50 transition-colors"
-                          >
-                            <td className="px-6 py-4 font-bold text-slate-900">
-                              {booking.roomName}
-                            </td>
-                            <td className="px-6 py-4 text-slate-600 font-medium">
-                              {booking.bookingTitle}
-                            </td>
-                            <td className="px-6 py-4 text-slate-600">
-                              {booking.date}
-                            </td>
-                            <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                              {booking.time}
-                            </td>
-                            <td className="px-6 py-4 text-slate-600 font-medium">
-                              {booking.participants} คน
-                            </td>
+                          <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-slate-900">{booking.roomName}</td>
+                            <td className="px-6 py-4 text-slate-600 font-medium">{booking.bookingTitle}</td>
+                            <td className="px-6 py-4 text-slate-600">{booking.date}</td>
+                            <td className="px-6 py-4 text-slate-500 font-mono text-xs">{booking.time}</td>
+                            <td className="px-6 py-4 text-slate-600 font-medium">{booking.participants} คน</td>
                             <td className="px-6 py-4">
-                              <span
-                                className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold ${getStatusColor(booking.status)}`}
-                              >
+                              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold ${getStatusColor(booking.status)}`}>
                                 {booking.statusLabel}
                               </span>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-center">
-                                {/* แก้ไขครอบแท็ก Link ชี้มายังไฟล์รายละเอียดห้องย่อยตาม id */}
-                                <Link
-                                  href={`/user/bookings/${booking.id}`}
-                                  title="ดูรายละเอียด"
-                                  className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors inline-block"
-                                >
+                                <Link href={`/user/bookings/${booking.id}`} title="ดูรายละเอียด" className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors inline-block">
                                   <Eye size={15} />
                                 </Link>
                               </div>
@@ -283,10 +322,7 @@ export default function MyBookingsPage() {
                         ))
                       ) : (
                         <tr>
-                          <td
-                            colSpan={7}
-                            className="px-6 py-16 text-center text-slate-400 font-medium bg-white"
-                          >
+                          <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-medium bg-white">
                             ไม่พบข้อมูลประวัติการจองห้องประชุม
                           </td>
                         </tr>

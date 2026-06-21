@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -24,69 +24,6 @@ interface Room {
   image?: string;
 }
 
-const mockRooms: Room[] = [
-  {
-    id: "RM001",
-    name: "Andaman Suite",
-    floor: 12,
-    capacity: 50,
-    type: "ห้องประชุมใหญ่",
-    amenities: ["WiFi", "Projector", "AC"],
-    status: "available",
-    bookings: 24,
-  },
-  {
-    id: "RM002",
-    name: "Similan Room",
-    floor: 12,
-    capacity: 12,
-    type: "ห้องประชุมย่อย",
-    amenities: ["WiFi", "TV"],
-    status: "available",
-    bookings: 18,
-  },
-  {
-    id: "RM003",
-    name: "Lanna Hub",
-    floor: 10,
-    capacity: 30,
-    type: "Creative Space",
-    amenities: ["WiFi", "Whiteboard", "AC"],
-    status: "available",
-    bookings: 15,
-  },
-  {
-    id: "RM004",
-    name: "Chao Phraya Boardroom",
-    floor: 9,
-    capacity: 20,
-    type: "Executive Boardroom",
-    amenities: ["WiFi", "Projector", "AC", "Coffee Station"],
-    status: "maintenance",
-    bookings: 12,
-  },
-  {
-    id: "RM005",
-    name: "Phuket Lab",
-    floor: 8,
-    capacity: 40,
-    type: "Training Room",
-    amenities: ["WiFi", "Computer", "AC"],
-    status: "available",
-    bookings: 20,
-  },
-  {
-    id: "RM006",
-    name: "Tao Meeting Pod",
-    floor: 11,
-    capacity: 8,
-    type: "Focus Room",
-    amenities: ["WiFi", "Whiteboard"],
-    status: "inactive",
-    bookings: 5,
-  },
-];
-
 const getStatusBadge = (status: string) => {
   const badges: { [key: string]: string } = {
     available: "bg-green-100 text-green-800",
@@ -102,6 +39,8 @@ const getStatusBadge = (status: string) => {
 };
 
 const RoomManagementPage = () => {
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -118,7 +57,43 @@ const RoomManagementPage = () => {
     "Focus Room",
   ];
 
-  const filteredRooms = mockRooms.filter((room) => {
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/admin/rooms`);
+        if (res.ok) {
+          const data = await res.json();
+          setRooms(data);
+        }
+      } catch (err) {
+        console.error("Error fetching rooms:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRooms();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("คุณแน่ใจหรือไม่ที่จะลบห้องประชุมนี้?")) return;
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/admin/rooms/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setRooms(rooms.filter(room => room.id !== id));
+      } else {
+        alert("เกิดข้อผิดพลาดในการลบห้องประชุม");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
+  };
+
+  const filteredRooms = rooms.filter((room) => {
     const matchesSearch =
       room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room.type.toLowerCase().includes(searchTerm.toLowerCase());
@@ -221,8 +196,16 @@ const RoomManagementPage = () => {
                   className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md hover:border-slate-300/70 transition-all flex flex-col"
                 >
                   {/* Room Image */}
-                  <div className="w-full h-44 bg-slate-50 border-b border-slate-100 flex items-center justify-center shrink-0">
-                    <ImageIcon size={36} className="text-slate-300" />
+                  <div className="w-full h-44 bg-slate-50 border-b border-slate-100 flex items-center justify-center shrink-0 relative">
+                    {room.image ? (
+                      <img
+                        src={room.image}
+                        alt={room.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon size={36} className="text-slate-300" />
+                    )}
                   </div>
 
                   {/* Room Content */}
@@ -290,7 +273,10 @@ const RoomManagementPage = () => {
                         <Edit size={14} />
                         <span>แก้ไข</span>
                       </a>
-                      <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 text-xs font-semibold transition-all active:scale-95 shadow-2xs">
+                      <button 
+                        onClick={() => handleDelete(room.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 text-xs font-semibold transition-all active:scale-95 shadow-2xs"
+                      >
                         <Trash2 size={14} />
                         <span>ลบ</span>
                       </button>

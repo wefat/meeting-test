@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Bell,
   ChevronDown,
@@ -30,71 +30,6 @@ import {
 } from "recharts";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 
-const roomStatusData = [
-  {
-    floor: 12,
-    name: "Andaman Suite",
-    type: "ห้องประชุมใหญ่",
-    capacity: 50,
-    status: "พร้อมใช้งาน",
-  },
-  {
-    floor: 12,
-    name: "Similan Room",
-    type: "ห้องประชุมย่อย",
-    capacity: 12,
-    status: "มีการใช้งาน",
-  },
-  {
-    floor: 10,
-    name: "Lanna Hub",
-    type: "Creative Space",
-    capacity: 30,
-    status: "รอทำความสะอาด",
-  },
-  {
-    floor: 9,
-    name: "Chao Phraya",
-    type: "Executive Boardroom",
-    capacity: 20,
-    status: "บำรุงรักษา",
-  },
-  {
-    floor: 8,
-    name: "Phuket Lab",
-    type: "Training Room",
-    capacity: 40,
-    status: "พร้อมใช้งาน",
-  },
-];
-
-const popularRoomsData = [
-  { rank: 1, name: "Andaman Suite", bookings: 124 },
-  { rank: 2, name: "Lanna Hub", bookings: 98 },
-  { rank: 3, name: "Phuket Lab", bookings: 85 },
-  { rank: 4, name: "Chao Phraya", bookings: 72 },
-];
-
-const monthlyUsageData = [
-  { month: "Jan", usage: 50 },
-  { month: "Feb", usage: 65 },
-  { month: "Mar", usage: 70 },
-  { month: "Apr", usage: 75 },
-  { month: "May", usage: 80 },
-  { month: "Jun", usage: 85 },
-  { month: "Jul", usage: 90 },
-  { month: "Aug", usage: 85 },
-  { month: "Sep", usage: 80 },
-  { month: "Oct", usage: 75 },
-  { month: "Nov", usage: 70 },
-  { month: "Dec", usage: 65 },
-];
-
-const occupancyChartData = [
-  { name: "ว่าง", value: 22 },
-  { name: "กำลังใช้งาน", value: 78 },
-];
-
 const getStatusColor = (status: string) => {
   switch (status) {
     case "พร้อมใช้งาน":
@@ -123,7 +58,7 @@ const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
     </div>
     {change && (
       <p className="text-sm font-medium">
-        <span className="text-green-600">↑ {change}</span>
+        <span className="text-green-600">{change}</span>
       </p>
     )}
   </div>
@@ -131,6 +66,62 @@ const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
 
 export default function AdminDashboard() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadNotifs = () => {
+      try {
+        const stored = localStorage.getItem("adminNotifications");
+        if (stored) {
+          setAdminNotifications(JSON.parse(stored));
+        }
+      } catch (err) {
+        console.error("Error loading admin notifications:", err);
+      }
+    };
+    loadNotifs();
+    window.addEventListener("storage", loadNotifs);
+    return () => window.removeEventListener("storage", loadNotifs);
+  }, []);
+
+  const handleClearAdminNotifications = () => {
+    localStorage.setItem("adminNotifications", "[]");
+    setAdminNotifications([]);
+  };
+  const [stats, setStats] = useState({
+    utilizationRate: 0,
+    todayBookingsCount: 0,
+    maintenanceRooms: 0,
+    popularRoomsData: [] as any[],
+    monthlyUsageData: [] as any[],
+    roomStatusData: [] as any[],
+    recentActivities: [] as any[]
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/admin/dashboard`);
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const occupancyChartData = [
+    { name: "กำลังใช้งาน", value: stats.utilizationRate },
+    { name: "ว่าง", value: 100 - stats.utilizationRate },
+  ];
 
   return (
     <div className="flex bg-slate-50 min-h-screen font-sans">
@@ -151,10 +142,51 @@ export default function AdminDashboard() {
             />
           </div>
           <div className="flex items-center gap-2 md:gap-4 shrink-0">
-            <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                <Bell size={20} />
+                {adminNotifications.length > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+              
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg py-2 z-30">
+                  <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                    <span className="font-bold text-xs text-slate-700">การแจ้งเตือนจองห้อง</span>
+                    {adminNotifications.length > 0 && (
+                      <button 
+                        onClick={handleClearAdminNotifications}
+                        className="text-[10px] font-bold text-blue-600 hover:underline"
+                      >
+                        ล้างทั้งหมด
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-50">
+                    {adminNotifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-slate-400 text-xs font-medium">
+                        ไม่มีการแจ้งเตือนใหม่
+                      </div>
+                    ) : (
+                      adminNotifications.map((n) => (
+                        <div key={n.id} className="px-4 py-3 hover:bg-slate-50 transition-colors text-left">
+                          <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                            {n.message}
+                          </p>
+                          <p className="text-[9px] text-slate-400 mt-1 font-semibold">
+                            {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} น.
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition hidden sm:block">
               <CircleHelp size={20} />
             </button>
@@ -209,29 +241,29 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:grid-cols-2 lg:gap-6 mb-8">
             <StatCard
               title="อัตราการใช้งานรวม"
-              value="82.4%"
-              change="+3.2%"
+              value={`${stats.utilizationRate}%`}
+              change="วันนี้"
               icon={TrendingUp}
               color="bg-green-100 text-green-600"
             />
             <StatCard
               title="การจองวันนี้"
-              value="149"
-              change="+12 bookings"
+              value={String(stats.todayBookingsCount)}
+              change="รายการจองวันนี้"
               icon={Calendar}
               color="bg-blue-100 text-blue-600"
             />
             <StatCard
               title="สถานะการบำรุงรักษา"
-              value="3"
-              change="rooms"
+              value={String(stats.maintenanceRooms)}
+              change="ห้องบำรุงรักษา"
               icon={AlertTriangle}
               color="bg-red-100 text-red-600"
             />
             <StatCard
-              title="รายได้เดือนนี้"
-              value="฿12.4k"
-              change="+5.2%"
+              title="รายได้เดือนนี้ (ประมาณการ)"
+              value={`฿${(stats.todayBookingsCount * 500).toLocaleString()}`}
+              change="ประเมินจากยอดจอง"
               icon={DollarSign}
               color="bg-purple-100 text-purple-600"
             />
@@ -245,41 +277,28 @@ export default function AdminDashboard() {
                 กิจกรรมล่าสุดในระบบ
               </h3>
               <div className="space-y-4">
-                {[
-                  {
-                    icon: "✓",
-                    label: "Andaman Suite",
-                    action: "จองสำเร็จ",
-                    color: "bg-green-100",
-                  },
-                  {
-                    icon: "✕",
-                    label: "Similan Room",
-                    action: "ยกเลิก",
-                    color: "bg-red-100",
-                  },
-                  {
-                    icon: "+",
-                    label: "Lanna Hub",
-                    action: "สร้างการจองใหม่",
-                    color: "bg-blue-100",
-                  },
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-full ${item.color} flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0`}
-                    >
-                      {item.icon}
+                {stats.recentActivities.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4 text-center">ไม่มีกิจกรรมล่าสุด</p>
+                ) : (
+                  stats.recentActivities.map((item, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-full ${item.color} flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0`}
+                      >
+                        {item.icon}
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-900">
+                          <span className="font-semibold">{item.label}</span>:{" "}
+                          {item.action}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} น.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-900">
-                        <span className="font-semibold">{item.label}</span>:{" "}
-                        {item.action}
-                      </p>
-                      <p className="text-xs text-gray-400">เมื่อไม่นานมานี้</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -289,24 +308,28 @@ export default function AdminDashboard() {
                 ห้องยอดนิยมสูงสุด (Top Popular Rooms)
               </h3>
               <div className="space-y-3">
-                {popularRoomsData.map((room) => (
-                  <div
-                    key={room.rank}
-                    className="flex justify-between items-center"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 flex items-center justify-center bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
-                        {room.rank}
-                      </span>
-                      <span className="text-sm text-slate-700">
-                        {room.name}
+                {stats.popularRoomsData.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4 text-center">ยังไม่มีข้อมูลสถิติ</p>
+                ) : (
+                  stats.popularRoomsData.map((room) => (
+                    <div
+                      key={room.rank}
+                      className="flex justify-between items-center"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 flex items-center justify-center bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
+                          {room.rank}
+                        </span>
+                        <span className="text-sm text-slate-700">
+                          {room.name}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-slate-900">
+                        {room.bookings} ครั้ง
                       </span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">
-                      {room.bookings} ครั้ง
-                    </span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -317,7 +340,7 @@ export default function AdminDashboard() {
               </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
-                  data={monthlyUsageData}
+                  data={stats.monthlyUsageData}
                   margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >
                   <CartesianGrid
@@ -378,7 +401,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {roomStatusData.map((room, index) => (
+                      {stats.roomStatusData.map((room, index) => (
                         <tr
                           key={index}
                           className="hover:bg-slate-50/50 transition-colors"
@@ -455,7 +478,7 @@ export default function AdminDashboard() {
                   </ResponsiveContainer>
                 </div>
                 <div className="text-center mt-4">
-                  <p className="text-3xl font-bold text-blue-600">78%</p>
+                  <p className="text-3xl font-bold text-blue-600">{stats.utilizationRate}%</p>
                   <p className="text-xs font-semibold text-gray-400 tracking-wider mt-2">
                     OCCUPIED
                   </p>

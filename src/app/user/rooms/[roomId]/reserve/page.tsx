@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ChevronLeft,
@@ -15,219 +15,303 @@ import {
   Wind,
   Coffee,
   Zap,
+  Tv,
+  Laptop,
+  Video,
+  Volume2,
+  Image as ImageIcon,
 } from "lucide-react";
 import SidebarNav from "@/components/layout/NavbarUser";
+import { getAuthUser } from "@/lib/mockAuth";
 
 interface Room {
   id: string;
   name: string;
   floor: number;
   capacity: number;
-  pricePerHour: number;
-  image: string;
+  type: string;
   description: string;
+  status: "available" | "maintenance" | "inactive";
+  image?: string;
   amenities: string[];
 }
-
-const mockRooms: Record<string, Room> = {
-  "1": {
-    id: "1",
-    name: "Skyline Boardroom",
-    floor: 12,
-    capacity: 12,
-    pricePerHour: 1500,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    description:
-      "Premium boardroom with stunning city views. Perfect for executive meetings and presentations.",
-    amenities: ["wifi", "projector", "ac"],
-  },
-  "2": {
-    id: "2",
-    name: "Creative Hub",
-    floor: 8,
-    capacity: 8,
-    pricePerHour: 800,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    description:
-      "Collaborative space designed for creative teams and brainstorming sessions.",
-    amenities: ["wifi", "whiteboard", "ac"],
-  },
-  "3": {
-    id: "3",
-    name: "Grand Hall",
-    floor: 5,
-    capacity: 50,
-    pricePerHour: 3500,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    description:
-      "Large-scale event space with professional setup. Ideal for conferences and major meetings.",
-    amenities: ["wifi", "projector", "ac", "catering"],
-  },
-  "4": {
-    id: "4",
-    name: "Focus Pod 04",
-    floor: 2,
-    capacity: 2,
-    pricePerHour: 300,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    description:
-      "Private quiet space perfect for one-on-one meetings or focused work.",
-    amenities: ["wifi", "ac"],
-  },
-  "5": {
-    id: "5",
-    name: "North Wing B",
-    floor: 3,
-    capacity: 6,
-    pricePerHour: 600,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    description:
-      "Modern meeting room with advanced technology and comfortable seating.",
-    amenities: ["wifi", "projector"],
-  },
-  "6": {
-    id: "6",
-    name: "Summit Suite",
-    floor: 15,
-    capacity: 15,
-    pricePerHour: 2000,
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop",
-    description:
-      "Executive suite with premium amenities and dedicated support staff.",
-    amenities: ["wifi", "projector", "ac", "coffee"],
-  },
-};
 
 const amenityIcons: Record<string, React.ReactNode> = {
   wifi: <Wifi size={14} />,
   projector: <Monitor size={14} />,
   ac: <Wind size={14} />,
-  catering: <Coffee size={14} />,
+  tv: <Tv size={14} />,
   whiteboard: <Zap size={14} />,
-  coffee: <Coffee size={14} />,
+  computer: <Laptop size={14} />,
+  "coffee station": <Coffee size={14} />,
+  "video conference": <Video size={14} />,
+  "sound system": <Volume2 size={14} />,
+  "interactive board": <Zap size={14} />,
 };
 
 export default function BookingPage() {
   const router = useRouter();
   const params = useParams();
   const roomId = params?.roomId as string;
-  const room = mockRooms[roomId];
 
-  const [date, setDate] = useState("2025-10-07");
+  const [room, setRoom] = useState<Room | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [date, setDate] = useState("");
   const [participants, setParticipants] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
 
-  const [selectedDay, setSelectedDay] = useState<number>(7);
-  const [selectedSlots, setSelectedSlots] = useState<string[]>([
-    "10:00",
-    "10:30",
-    "11:00",
-  ]);
+  const today = new Date();
+  const getInitialDate = () => {
+    const d = new Date();
+    if (d.getDay() === 0) {
+      d.setDate(d.getDate() + 1); // Skip Sunday
+    }
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
 
-  const timeSlotsData = [
-    { time: "08:00", status: "occupied" },
-    { time: "08:30", status: "occupied" },
-    { time: "09:00", status: "occupied" },
-    { time: "09:30", status: "occupied" },
-    { time: "10:00", status: "clear" },
-    { time: "10:30", status: "clear" },
-    { time: "11:00", status: "clear" },
-    { time: "11:30", status: "clear" },
-    { time: "12:00", status: "clear" },
-    { time: "12:30", status: "clear" },
-    { time: "13:00", status: "clear" },
-    { time: "13:30", status: "clear" },
-    { time: "14:00", status: "clear" },
-    { time: "14:30", status: "clear" },
-    { time: "15:00", status: "clear" },
-    { time: "15:30", status: "clear" },
-    { time: "16:00", status: "clear" },
-    { time: "16:30", status: "clear" },
-    { time: "17:00", status: "clear" },
-    { time: "17:30", status: "clear" },
-    { time: "18:00", status: "clear" },
+  const initialDateStr = getInitialDate();
+  const initialDateObj = new Date(initialDateStr);
+
+  const [calendarYear, setCalendarYear] = useState<number>(initialDateObj.getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState<number>(initialDateObj.getMonth()); // 0-indexed
+
+  const thaiMonths = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
   ];
 
-  const calendarDays = [
-    { day: 29, isCurrent: false },
-    { day: 30, isCurrent: false },
-    { day: 1, isCurrent: true },
-    { day: 2, isCurrent: true },
-    { day: 3, isCurrent: true },
-    { day: 4, isCurrent: true },
-    { day: 5, isCurrent: true },
-    { day: 6, isCurrent: true },
-    { day: 7, isCurrent: true },
-    { day: 8, isCurrent: true },
-    { day: 9, isCurrent: true },
-    { day: 10, isCurrent: true },
-    { day: 11, isCurrent: true },
-    { day: 12, isCurrent: true },
-    { day: 13, isCurrent: true },
-    { day: 14, isCurrent: true },
-    { day: 15, isCurrent: true },
-    { day: 16, isCurrent: true },
-    { day: 17, isCurrent: true },
-    { day: 18, isCurrent: true },
-    { day: 19, isCurrent: true },
-    { day: 20, isCurrent: true },
-    { day: 21, isCurrent: true },
-    { day: 22, isCurrent: true },
-    { day: 23, isCurrent: true },
-    { day: 24, isCurrent: true },
-    { day: 25, isCurrent: true },
-    { day: 26, isCurrent: true },
-    { day: 27, isCurrent: true },
-    { day: 28, isCurrent: true },
-    { day: 29, isCurrent: true },
-    { day: 30, isCurrent: true },
-    { day: 31, isCurrent: true },
-    { day: 1, isCurrent: false },
-    { day: 2, isCurrent: false },
-  ];
+  const [user, setUser] = useState<any>(null);
 
-  if (!room) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#f8fafc]">
-        <p className="text-slate-600 font-medium">Room not found</p>
-      </div>
-    );
-  }
+  // Set initial date once loaded
+  useEffect(() => {
+    setDate(initialDateStr);
+    const authUser = getAuthUser();
+    setUser(authUser);
+  }, []);
+
+  // Fetch Room details
+  useEffect(() => {
+    if (roomId) {
+      const fetchRoom = async () => {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${apiUrl}/api/admin/rooms/${roomId}`);
+          if (res.ok) {
+            const data = await res.json();
+            setRoom(data);
+          }
+        } catch (err) {
+          console.error("Error fetching room:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchRoom();
+    }
+  }, [roomId]);
+
+  // Fetch Occupied Slots
+  useEffect(() => {
+    if (!roomId || !date) return;
+    const fetchOccupiedSlots = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/admin/bookings?roomId=${roomId}&date=${date}`);
+        if (res.ok) {
+          const data = await res.json();
+          const activeBookings = data.filter((b: any) => b.status !== "cancelled");
+          const occupied: string[] = [];
+          const allTimes = [
+            "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+            "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+            "16:00", "16:30", "17:00", "17:30", "18:00"
+          ];
+          for (const b of activeBookings) {
+            for (const t of allTimes) {
+              if (t >= b.timeStart && t < b.timeEnd) {
+                if (!occupied.includes(t)) occupied.push(t);
+              }
+            }
+          }
+          setOccupiedSlots(occupied);
+        }
+      } catch (err) {
+        console.error("Error fetching occupied slots:", err);
+      }
+    };
+    fetchOccupiedSlots();
+  }, [roomId, date]);
+
+  // Generate calendar days dynamically
+  const getCalendarDays = () => {
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const firstDayIndex = new Date(calendarYear, calendarMonth, 1).getDay();
+    const days = [];
+    const prevMonthDays = new Date(calendarYear, calendarMonth, 0).getDate();
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      days.push({ day: prevMonthDays - i, isCurrent: false });
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ day: i, isCurrent: true });
+    }
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      days.push({ day: i, isCurrent: false });
+    }
+    return days;
+  };
+
+  const calendarDays = getCalendarDays();
+
+  const handlePrevMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 0) {
+        setCalendarYear((y) => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 11) {
+        setCalendarYear((y) => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+  };
 
   const handleSlotClick = (time: string, isOccupied: boolean) => {
     if (isOccupied) return;
     setSelectedSlots((prev) =>
       prev.includes(time)
         ? prev.filter((t) => t !== time)
-        : [...prev, time].sort(),
+        : [...prev, time].sort()
     );
   };
 
   const handleDayClick = (day: number, isCurrent: boolean) => {
     if (!isCurrent) return;
-    setSelectedDay(day);
-    const formattedDay = day < 10 ? `0${day}` : day;
-    setDate(`2024-10-${formattedDay}`);
+    const dateObj = new Date(calendarYear, calendarMonth, day);
+    if (dateObj.getDay() === 0) return; // Sunday cannot be selected
+    const formattedMonth = String(calendarMonth + 1).padStart(2, "0");
+    const formattedDay = String(day).padStart(2, "0");
+    setDate(`${calendarYear}-${formattedMonth}-${formattedDay}`);
+    setSelectedSlots([]); // Clear time slots when date changes
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f8fafc]">
+        <p className="text-slate-600 font-medium">กำลังโหลดข้อมูลห้องประชุม...</p>
+      </div>
+    );
+  }
+
+  if (!room) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f8fafc]">
+        <p className="text-slate-600 font-medium">ไม่พบข้อมูลห้องประชุม</p>
+      </div>
+    );
+  }
+  const baseSlots = [
+    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+    "16:00", "16:30", "17:00", "17:30", "18:00"
+  ];
+  
+  const timeSlotsData = baseSlots.map(time => ({
+    time,
+    status: occupiedSlots.includes(time) ? "occupied" : "clear"
+  }));
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedSlots.length === 0) {
       alert("กรุณาเลือกช่วงเวลาที่ต้องการจอง");
       return;
     }
-    alert(
-      `Booking confirmed for ${room.name} on ${date}\nSelected Slots: ${selectedSlots.join(", ")}`,
-    );
-    router.push("/user/rooms/room-list");
+    
+    const allTimes = [
+      "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+      "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+      "16:00", "16:30", "17:00", "17:30", "18:00"
+    ];
+    const timeStart = selectedSlots[0];
+    const lastSlot = selectedSlots[selectedSlots.length - 1];
+    const lastSlotIdx = allTimes.indexOf(lastSlot);
+    let timeEnd = "";
+    if (lastSlotIdx !== -1) {
+      if (lastSlot === "18:00") {
+        timeEnd = "18:30";
+      } else {
+        timeEnd = allTimes[lastSlotIdx + 1];
+      }
+    }
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/admin/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roomId: roomId,
+          organizer: user?.name || "Regular User",
+          title: title,
+          date: date,
+          timeStart: timeStart,
+          timeEnd: timeEnd,
+          participants: Number(participants),
+          status: "confirmed",
+        }),
+      });
+
+      if (res.ok) {
+        try {
+          const adminNotifs = JSON.parse(localStorage.getItem("adminNotifications") || "[]");
+          const timeRange = `${timeStart} - ${timeEnd}`;
+          adminNotifs.unshift({
+            id: Date.now().toString(),
+            message: `คุณ ${user?.name || "Regular User"} ได้ทำการจองห้อง ${room.name} วันที่ ${date} (${timeRange})`,
+            read: false,
+            createdAt: new Date().toISOString()
+          });
+          localStorage.setItem("adminNotifications", JSON.stringify(adminNotifs));
+        } catch (err) {
+          console.error("Failed to write admin notification:", err);
+        }
+
+        alert("จองห้องประชุมสำเร็จเรียบร้อยแล้ว!");
+        router.push("/user/bookings");
+      } else {
+        let errorMessage = "ไม่สามารถจองห้องประชุมได้";
+        try {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const text = await res.text();
+            console.error("Non-JSON error response:", text);
+            errorMessage = `เซิร์ฟเวอร์ตอบกลับรหัส: ${res.status} (Server Error)`;
+          }
+        } catch (err) {
+          console.error("Failed to parse error response:", err);
+        }
+        alert(`เกิดข้อผิดพลาด: ${errorMessage}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
   };
 
   return (
@@ -266,23 +350,30 @@ export default function BookingPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                 {/* 1.1 การ์ดแสดงรายละเอียดและรูปภาพของห้องประชุม */}
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col h-full">
-                  <div className="h-44 w-full relative bg-slate-100 shrink-0">
-                    <img
-                      src={room.image}
-                      alt={room.name}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="h-44 w-full relative bg-slate-100 shrink-0 flex items-center justify-center">
+                    {room.image ? (
+                      <img
+                        src={room.image}
+                        alt={room.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon size={36} className="text-slate-300" />
+                    )}
                     <div className="absolute top-3 right-3 bg-slate-900/70 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 rounded-md font-semibold">
                       Floor {room.floor}
                     </div>
                   </div>
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
                     <div className="space-y-2">
+                      <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
+                        {room.type}
+                      </div>
                       <h3 className="font-bold text-slate-900 text-base">
                         {room.name}
                       </h3>
                       <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                        {room.description}
+                        {room.description || "ไม่มีคำอธิบายเพิ่มเติม"}
                       </p>
                     </div>
 
@@ -300,15 +391,18 @@ export default function BookingPage() {
 
                       {/* สิ่งอำนวยความสะดวกย่อย */}
                       <div className="flex flex-wrap gap-1">
-                        {room.amenities.map((amenity) => (
-                          <span
-                            key={amenity}
-                            className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-[10px] font-bold capitalize"
-                          >
-                            {amenityIcons[amenity]}
-                            <span>{amenity}</span>
-                          </span>
-                        ))}
+                        {room.amenities.map((amenity) => {
+                          const lowerAmenity = amenity.toLowerCase();
+                          return (
+                            <span
+                              key={amenity}
+                              className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-[10px] font-bold capitalize"
+                            >
+                              {amenityIcons[lowerAmenity] || <Zap size={10} />}
+                              <span>{amenity}</span>
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -324,16 +418,18 @@ export default function BookingPage() {
 
                     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                       <div className="bg-[#0b57d0] text-white px-3 py-2 flex justify-between items-center text-xs font-semibold">
-                        <span>ตุลาคม 2024</span>
+                        <span>{thaiMonths[calendarMonth]} {calendarYear}</span>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
+                            onClick={handlePrevMonth}
                             className="p-0.5 hover:bg-white/20 rounded transition-colors"
                           >
                             <ChevronLeft size={14} />
                           </button>
                           <button
                             type="button"
+                            onClick={handleNextMonth}
                             className="p-0.5 hover:bg-white/20 rounded transition-colors"
                           >
                             <ChevronRight size={14} />
@@ -347,20 +443,29 @@ export default function BookingPage() {
                           </span>
                         ))}
                         {calendarDays.map((item, idx) => {
-                          const isSelected =
-                            item.isCurrent && selectedDay === item.day;
+                          const isSelected = item.isCurrent && 
+                            date === `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(item.day).padStart(2, "0")}`;
+                          
+                          let isSunday = false;
+                          if (item.isCurrent) {
+                            const dateObj = new Date(calendarYear, calendarMonth, item.day);
+                            isSunday = dateObj.getDay() === 0;
+                          }
+                          
                           return (
                             <span
                               key={idx}
-                              onClick={() =>
-                                handleDayClick(item.day, item.isCurrent)
-                              }
+                              onClick={() => {
+                                if (!isSunday) handleDayClick(item.day, item.isCurrent);
+                              }}
                               className={`py-1 flex items-center justify-center rounded-md transition-all text-xs ${
                                 !item.isCurrent
                                   ? "text-slate-300 cursor-not-allowed"
+                                  : isSunday
+                                  ? "text-slate-300 bg-slate-50 cursor-not-allowed opacity-50"
                                   : isSelected
-                                    ? "bg-[#0b57d0] text-white font-bold cursor-pointer shadow-2xs"
-                                    : "text-slate-700 hover:bg-slate-100 cursor-pointer"
+                                  ? "bg-[#0b57d0] text-white font-bold cursor-pointer shadow-2xs"
+                                  : "text-slate-700 hover:bg-slate-100 cursor-pointer"
                               }`}
                             >
                               {item.day}
