@@ -97,13 +97,14 @@ export default function AdminDashboard() {
     popularRoomsData: [] as any[],
     monthlyUsageData: [] as any[],
     roomStatusData: [] as any[],
-    recentActivities: [] as any[]
+    recentActivities: [] as any[],
   });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
         const res = await fetch(`${apiUrl}/api/admin/dashboard`);
         if (res.ok) {
           const data = await res.json();
@@ -143,7 +144,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-2 md:gap-4 shrink-0">
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
                 className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
               >
@@ -152,13 +153,15 @@ export default function AdminDashboard() {
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 )}
               </button>
-              
+
               {notificationsOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg py-2 z-30">
                   <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                    <span className="font-bold text-xs text-slate-700">การแจ้งเตือนจองห้อง</span>
+                    <span className="font-bold text-xs text-slate-700">
+                      การแจ้งเตือนจองห้อง
+                    </span>
                     {adminNotifications.length > 0 && (
-                      <button 
+                      <button
                         onClick={handleClearAdminNotifications}
                         className="text-[10px] font-bold text-blue-600 hover:underline"
                       >
@@ -173,12 +176,19 @@ export default function AdminDashboard() {
                       </div>
                     ) : (
                       adminNotifications.map((n) => (
-                        <div key={n.id} className="px-4 py-3 hover:bg-slate-50 transition-colors text-left">
+                        <div
+                          key={n.id}
+                          className="px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                        >
                           <p className="text-xs text-slate-600 leading-relaxed font-medium">
                             {n.message}
                           </p>
                           <p className="text-[9px] text-slate-400 mt-1 font-semibold">
-                            {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} น.
+                            {new Date(n.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}{" "}
+                            น.
                           </p>
                         </div>
                       ))
@@ -228,11 +238,15 @@ export default function AdminDashboard() {
             <div className="flex gap-3 w-full sm:w-auto">
               <button className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors shadow-2xs">
                 <FileDown size={16} />
-                Export
+                เพิ่มห้องประชุม
               </button>
               <button className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
                 <Plus size={16} />
-                เพิ่มการจองใหม่
+                <a
+                  href="/admin/booking/create"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-sm"
+                ></a>
+                จองห้องประชุม
               </button>
             </div>
           </div>
@@ -278,7 +292,9 @@ export default function AdminDashboard() {
               </h3>
               <div className="space-y-4">
                 {stats.recentActivities.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-4 text-center">ไม่มีกิจกรรมล่าสุด</p>
+                  <p className="text-sm text-gray-400 py-4 text-center">
+                    ไม่มีกิจกรรมล่าสุด
+                  </p>
                 ) : (
                   stats.recentActivities.map((item, i) => (
                     <div key={i} className="flex gap-3">
@@ -293,7 +309,11 @@ export default function AdminDashboard() {
                           {item.action}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} น.
+                          {new Date(item.time).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          น.
                         </p>
                       </div>
                     </div>
@@ -309,7 +329,9 @@ export default function AdminDashboard() {
               </h3>
               <div className="space-y-3">
                 {stats.popularRoomsData.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-4 text-center">ยังไม่มีข้อมูลสถิติ</p>
+                  <p className="text-sm text-gray-400 py-4 text-center">
+                    ยังไม่มีข้อมูลสถิติ
+                  </p>
                 ) : (
                   stats.popularRoomsData.map((room) => (
                     <div
@@ -478,7 +500,9 @@ export default function AdminDashboard() {
                   </ResponsiveContainer>
                 </div>
                 <div className="text-center mt-4">
-                  <p className="text-3xl font-bold text-blue-600">{stats.utilizationRate}%</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {stats.utilizationRate}%
+                  </p>
                   <p className="text-xs font-semibold text-gray-400 tracking-wider mt-2">
                     OCCUPIED
                   </p>

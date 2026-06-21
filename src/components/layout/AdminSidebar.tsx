@@ -23,7 +23,6 @@ export default function AdminSidebar() {
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutGrid },
     { name: 'Booking Management', href: '/admin/booking', icon: Calendar },
     { name: 'Room Management', href: '/admin/rooms', icon: Building },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
   return (

@@ -12,6 +12,7 @@
     "@fullcalendar/daygrid": "^6.1.21",
     "@fullcalendar/react": "^6.1.21",
     "@fullcalendar/timegrid": "^6.1.21",
+    "@line/liff": "^2.29.0",
     "date-fns": "^4.4.0",
     "firebase": "^12.15.0",
     "lucide-react": "^1.21.0",
