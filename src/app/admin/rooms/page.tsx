@@ -93,6 +93,25 @@ const RoomManagementPage = () => {
     }
   };
 
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${apiUrl}/api/admin/rooms/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        setRooms(rooms.map(room => room.id === id ? { ...room, status: newStatus as any } : room));
+      } else {
+        alert("เกิดข้อผิดพลาดในการเปลี่ยนสถานะ");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
+  };
+
   const filteredRooms = rooms.filter((room) => {
     const matchesSearch =
       room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,10 +245,7 @@ const RoomManagementPage = () => {
                           <span className="text-gray-400">ประเภท:</span>
                           <span className="font-semibold text-slate-800">{room.type}</span>
                         </div>
-                        <div className="flex justify-between border-b border-slate-50 pb-1.5">
-                          <span className="text-gray-400">ชั้น:</span>
-                          <span className="font-medium text-slate-800">ชั้น {room.floor}</span>
-                        </div>
+
                         <div className="flex justify-between border-b border-slate-50 pb-1.5">
                           <span className="text-gray-400">ความจุ:</span>
                           <span className="font-medium text-slate-800">{room.capacity} คน</span>
@@ -261,11 +277,7 @@ const RoomManagementPage = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-4 border-t border-slate-100 mt-auto">
-                      <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all active:scale-95 shadow-2xs">
-                        <Eye size={14} />
-                        <span>ดู</span>
-                      </button>
+                    <div className="flex gap-2 pt-4 border-t border-slate-100 mt-auto items-center">
                       <a
                         href={`/admin/rooms/${room.id}`}
                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all active:scale-95 shadow-2xs"
@@ -273,13 +285,19 @@ const RoomManagementPage = () => {
                         <Edit size={14} />
                         <span>แก้ไข</span>
                       </a>
-                      <button 
-                        onClick={() => handleDelete(room.id)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 text-xs font-semibold transition-all active:scale-95 shadow-2xs"
+                      <select
+                        value={room.status}
+                        onChange={(e) => handleStatusChange(room.id, e.target.value)}
+                        className={`flex-1 px-2 py-2 border rounded-lg text-xs font-bold cursor-pointer outline-none focus:ring-2 focus:ring-blue-100 transition-all text-center appearance-none ${
+                          room.status === "available" ? "bg-green-50 text-green-700 border-green-200" :
+                          room.status === "maintenance" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                          "bg-gray-50 text-gray-700 border-gray-200"
+                        }`}
                       >
-                        <Trash2 size={14} />
-                        <span>ลบ</span>
-                      </button>
+                        <option value="available">✅ พร้อมใช้งาน</option>
+                        <option value="maintenance">🚧 บำรุงรักษา</option>
+                        <option value="inactive">❌ ปิดใช้งาน</option>
+                      </select>
                     </div>
                   </div>
                 </div>

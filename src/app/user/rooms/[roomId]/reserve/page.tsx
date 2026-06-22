@@ -328,7 +328,7 @@ export default function BookingPage() {
               className="flex w-fit items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm transition-all active:scale-95"
             >
               <ChevronLeft size={18} className="stroke-[2.5]" />
-              <span>Back</span>
+              <span>กลับ</span>
             </button>
           </div>
         </header>
@@ -338,10 +338,10 @@ export default function BookingPage() {
           <div className="w-full">
             <div className="mb-6">
               <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Book {room.name}
+                จองห้อง {room.name}
               </h1>
               <p className="mt-1 text-sm text-gray-500 font-medium">
-                Complete all details to confirm your reservation
+                กรุณากรอกรายละเอียดให้ครบถ้วนเพื่อยืนยันการจอง
               </p>
             </div>
 
@@ -523,15 +523,15 @@ export default function BookingPage() {
                 <div className="flex flex-wrap items-center gap-5 text-[11px] font-bold text-slate-500 border-t border-slate-50 pt-3">
                   <div className="flex items-center gap-2">
                     <span className="w-3.5 h-3.5 rounded bg-green-50 border border-green-200 inline-block"></span>
-                    <span>Available</span>
+                    <span>ว่าง</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-3.5 h-3.5 rounded bg-red-50 border border-red-200 inline-block"></span>
-                    <span>Occupied</span>
+                    <span>ไม่ว่าง</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-3.5 h-3.5 rounded bg-[#0b57d0] inline-block"></span>
-                    <span>Your Selection</span>
+                    <span>กำลังเลือก</span>
                   </div>
                 </div>
 
@@ -553,13 +553,13 @@ export default function BookingPage() {
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 w-full">
                 <h2 className="flex items-center gap-2 text-base font-bold text-[#0f2963] border-b border-slate-100 pb-3 tracking-wide">
                   <Users size={18} className="text-blue-600" />
-                  <span>Meeting Details</span>
+                  <span>รายละเอียดการประชุม</span>
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                      Meeting Title <span className="text-red-500">*</span>
+                      หัวข้อการประชุม <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -573,7 +573,7 @@ export default function BookingPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                      Number of Participants{" "}
+                      จำนวนผู้เข้าร่วม{" "}
                       <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -587,14 +587,14 @@ export default function BookingPage() {
                       required
                     />
                     <p className="mt-1 text-[11px] font-medium text-slate-400">
-                      Max capacity for this room is {room.capacity} people.
+                      ความจุสูงสุดของห้องนี้คือ {room.capacity} คน
                     </p>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Description (Optional)
+                    รายละเอียดเพิ่มเติม (ไม่บังคับ)
                   </label>
                   <textarea
                     value={description}
@@ -614,14 +614,14 @@ export default function BookingPage() {
                     }
                     className="w-full sm:flex-1 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-all hover:bg-blue-700 active:scale-98 shadow-sm shadow-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Confirm Booking
+                    ยืนยันการจอง
                   </button>
                   <button
                     type="button"
                     onClick={() => router.back()}
                     className="w-full sm:w-48 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 bg-white transition-all hover:bg-slate-50 active:scale-98"
                   >
-                    Cancel
+                    ยกเลิก
                   </button>
                 </div>
               </div>

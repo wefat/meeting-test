@@ -125,7 +125,7 @@ export default function RoomDetailPage() {
               className="flex w-fit items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm transition-all active:scale-95"
             >
               <ChevronLeft size={18} className="stroke-[2.5]" />
-              <span>Back</span>
+              <span>กลับ</span>
             </button>
           </div>
         </header>
@@ -164,7 +164,7 @@ export default function RoomDetailPage() {
                 <div className="rounded-xl bg-white p-6 border border-slate-200 shadow-sm">
                   <h2 className="mb-6 flex items-center gap-2 text-base font-bold text-slate-900 tracking-wide">
                     <AlertCircle size={18} className="text-blue-600" />
-                    <span>Room Information</span>
+                    <span>ข้อมูลห้องประชุม</span>
                   </h2>
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                     <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -172,8 +172,8 @@ export default function RoomDetailPage() {
                         <Users size={18} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacity</p>
-                        <p className="text-sm font-bold text-slate-800 truncate">{room.capacity} People</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ความจุ</p>
+                        <p className="text-sm font-bold text-slate-800 truncate">{room.capacity} คน</p>
                       </div>
                     </div>
                     
@@ -182,8 +182,8 @@ export default function RoomDetailPage() {
                         <MapPin size={18} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Location</p>
-                        <p className="text-sm font-bold text-slate-800 truncate">Floor {room.floor}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">พิกัด</p>
+                        <p className="text-sm font-bold text-slate-800 truncate">ชั้น {room.floor}</p>
                       </div>
                     </div>
                     
@@ -192,7 +192,7 @@ export default function RoomDetailPage() {
                         <Clock size={18} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">สถานะ</p>
                         <p className="text-sm font-bold text-slate-800 truncate">
                           {room.status === "available" ? "พร้อมใช้งาน" : room.status === "maintenance" ? "บำรุงรักษา" : "ปิดใช้งาน"}
                         </p>
@@ -205,7 +205,7 @@ export default function RoomDetailPage() {
                 <div className="rounded-xl bg-white p-6 border border-slate-200 shadow-sm">
                   <h2 className="mb-6 flex items-center gap-2 text-base font-bold text-slate-900 tracking-wide">
                     <Check size={18} className="text-blue-600" />
-                    <span>Amenities</span>
+                    <span>สิ่งอำนวยความสะดวก</span>
                   </h2>
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     {room.amenities.map((amenity) => {
@@ -230,7 +230,7 @@ export default function RoomDetailPage() {
                 {/* Gallery Block */}
                 {galleryImages.length > 0 && (
                   <div className="rounded-xl bg-white p-6 border border-slate-200 shadow-sm">
-                    <h2 className="mb-4 text-base font-bold text-slate-900 tracking-wide">Gallery</h2>
+                    <h2 className="mb-4 text-base font-bold text-slate-900 tracking-wide">แกลเลอรี</h2>
                     <div className="space-y-3">
                       <div className="relative overflow-hidden rounded-xl bg-slate-100 h-64 border border-slate-200 shadow-2xs flex items-center justify-center">
                         <img
@@ -271,7 +271,7 @@ export default function RoomDetailPage() {
                 {/* Pricing Header replaced with Type & Status */}
                 <div className="mb-6 border-b border-slate-100 pb-5">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Room Type & Status
+                    ประเภทและสถานะ
                   </span>
                   <div className="mt-2 flex flex-col gap-2">
                     <span className="text-xl font-extrabold text-slate-900 tracking-tight">
@@ -300,14 +300,14 @@ export default function RoomDetailPage() {
                     onClick={() => router.push(`/user/rooms/${roomId}/reserve`)}
                     className="w-full rounded-xl bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed py-3 text-xs font-bold text-white transition-all hover:bg-blue-700 active:scale-98 shadow-sm shadow-blue-100"
                   >
-                    Reserve Now
+                    จองตอนนี้
                   </button>
                   <button
                     type="button"
                     onClick={() => router.push("/user/rooms/room-list")}
                     className="w-full rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 bg-white transition-all hover:bg-slate-50 active:scale-98"
                   >
-                    Back to List
+                    กลับหน้ารายการ
                   </button>
                 </div>
               </div>

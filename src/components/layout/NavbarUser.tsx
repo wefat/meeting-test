@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { logout } from "@/lib/mockAuth";
 import {
   Home,
   MapPin,
@@ -21,15 +22,14 @@ interface SidebarNavProps {
 
 export default function SidebarNav({ sidebarOpen }: SidebarNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
   // เพิ่ม State สำหรับการเปิด-ปิดเมนูบนหน้าจอสมาร์ทโฟน/แท็บเล็ต ให้เหมือนเวอร์ชัน Admin
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { icon: Home, label: "Dashboard", href: "/user/dashboard" },
-    { icon: MapPin, label: "Room List", href: "/user/rooms/room-list" },
-    { icon: Calendar, label: "My Bookings", href: "/user/bookings" },
-    { icon: BarChart3, label: "Analytics", href: "/user/analytics" },
-    { icon: Settings, label: "Settings", href: "/user/settings" },
+    { icon: Home, label: "หน้าแรก", href: "/user/dashboard" },
+    { icon: Calendar, label: "จัดการการจองห้องประชุม", href: "/user/bookings" },
+    { icon: MapPin, label: "รายการห้องประชุม", href: "/user/rooms/room-list" },
   ];
 
   return (
@@ -121,7 +121,10 @@ export default function SidebarNav({ sidebarOpen }: SidebarNavProps) {
               {sidebarOpen && <span>Support</span>}
             </Link>
             <button
-              onClick={() => console.log("Logout triggered")}
+              onClick={() => {
+                logout();
+                router.push('/login');
+              }}
               className={`w-full flex items-center gap-3 rounded-lg py-2 text-sm text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors ${
                 sidebarOpen ? "px-3" : "justify-center px-0"
               }`}

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { logout } from '@/lib/mockAuth';
 import {
   LayoutGrid,
   Calendar,
@@ -16,13 +17,14 @@ import {
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   // State สำหรับควบคุมการเปิด-ปิด เมนูในหน้าจอ Mobile/Tablet
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutGrid },
-    { name: 'Booking Management', href: '/admin/booking', icon: Calendar },
-    { name: 'Room Management', href: '/admin/rooms', icon: Building },
+    { name: 'แดชบอร์ด', href: '/admin/dashboard', icon: LayoutGrid },
+    { name: 'จัดการการจอง', href: '/admin/booking', icon: Calendar },
+    { name: 'จัดการห้องประชุม', href: '/admin/rooms', icon: Building },
   ];
 
   return (
@@ -101,14 +103,17 @@ export default function AdminSidebar() {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100/80 transition-colors"
             >
               <CircleHelp size={18} className="text-slate-500" />
-              <span>Support</span>
+              <span>ช่วยเหลือ</span>
             </Link>
             <button
-              onClick={() => console.log('Logout triggered')}
+              onClick={() => {
+                logout();
+                router.push('/login');
+              }}
               className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
               <LogOut size={18} className="text-slate-500" />
-              <span>Logout</span>
+              <span>ออกจากระบบ</span>
             </button>
           </div>
 

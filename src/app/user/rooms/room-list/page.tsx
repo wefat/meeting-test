@@ -51,9 +51,18 @@ export default function UserRoomListPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [capacityFilter, setCapacityFilter] = useState("all");
-  const [selectedDate, setSelectedDate] = useState("11/24/2025");
-  const [selectedTime, setSelectedTime] = useState("08:00 - 08:30");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const roomTypes = [
+    "all",
+    "ห้องประชุมใหญ่",
+    "ห้องประชุมย่อย",
+    "Creative Space",
+    "Executive Boardroom",
+    "Training Room",
+    "Focus Room",
+  ];
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
@@ -84,17 +93,16 @@ export default function UserRoomListPage() {
       );
     }
 
-    if (capacityFilter !== "all") {
-      const [min, max] = capacityFilter.split("-").map(Number);
-      filtered = filtered.filter((room) =>
-        max
-          ? room.capacity >= min && room.capacity <= max
-          : room.capacity >= min
-      );
+    if (filterType !== "all") {
+      filtered = filtered.filter((room) => room.type === filterType);
+    }
+
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((room) => room.status === filterStatus);
     }
 
     return filtered;
-  }, [rooms, searchTerm, capacityFilter]);
+  }, [rooms, searchTerm, filterType, filterStatus]);
 
   const handleRoomClick = (roomId: string) => {
     router.push(`/user/rooms/${roomId}`);
@@ -133,88 +141,40 @@ export default function UserRoomListPage() {
           <div className="w-full">
             
             {/* Search & Filter Section Panel */}
-            <div className="bg-white border border-slate-200 shadow-xs rounded-xl p-4 mb-8">
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                
-                {/* Date Input */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">
-                    Date
-                  </label>
-                  <div className="relative">
-                    <Calendar
-                      className="absolute left-3 top-2.5 text-slate-400"
-                      size={16}
-                    />
-                    <input
-                      type="text"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all"
-                      placeholder="MM/DD/YYYY"
-                    />
-                  </div>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1 flex items-center gap-2 bg-slate-100 px-4 py-2.5 rounded-lg border border-transparent focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                  <Search size={18} className="text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="ค้นหาห้องประชุม..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-transparent outline-none w-full text-sm text-slate-800 placeholder-gray-400"
+                  />
                 </div>
-
-                {/* Time Input */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">
-                    Time
-                  </label>
-                  <div className="relative">
-                    <Clock
-                      className="absolute left-3 top-2.5 text-slate-400"
-                      size={16}
-                    />
-                    <select
-                      value={selectedTime}
-                      onChange={(e) => setSelectedTime(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer"
-                    >
-                      <option>08:00 - 08:30</option>
-                      <option>08:30 - 09:00</option>
-                      <option>09:00 - 09:30</option>
-                      <option>09:30 - 10:00</option>
-                      <option>10:00 - 10:30</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Capacity Filter */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">
-                    Capacity
-                  </label>
+                <div className="flex flex-col sm:flex-row gap-3">
                   <select
-                    value={capacityFilter}
-                    onChange={(e) => setCapacityFilter(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white py-2 px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer"
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer min-w-[160px]"
                   >
-                    <option value="all">All Sizes</option>
-                    <option value="1-5">1-5 People</option>
-                    <option value="6-15">6-15 People</option>
-                    <option value="16-50">16+ People</option>
+                    {roomTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type === "all" ? "ประเภททั้งหมด" : type}
+                      </option>
+                    ))}
                   </select>
-                </div>
-
-                {/* Search Input */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">
-                    Search
-                  </label>
-                  <div className="relative">
-                    <Search
-                      className="absolute left-3 top-2.5 text-slate-400"
-                      size={16}
-                    />
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Room name..."
-                      className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all"
-                    />
-                  </div>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all cursor-pointer min-w-[140px]"
+                  >
+                    <option value="all">สถานะทั้งหมด</option>
+                    <option value="available">พร้อมใช้งาน</option>
+                    <option value="maintenance">บำรุงรักษา</option>
+                    <option value="inactive">ปิดใช้งาน</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -233,71 +193,72 @@ export default function UserRoomListPage() {
                     className="group cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-200 shadow-xs transition-all hover:shadow-md hover:border-slate-300 flex flex-col"
                   >
                     {/* Container รูปห้อง */}
-                    <div className="relative overflow-hidden bg-slate-100 h-48 border-b border-slate-100 shrink-0 flex items-center justify-center">
+                    <div className="w-full h-44 bg-slate-50 border-b border-slate-100 flex items-center justify-center shrink-0 relative overflow-hidden">
                       {room.image ? (
                         <img
                           src={room.image}
                           alt={room.name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
                         <ImageIcon size={36} className="text-slate-300" />
                       )}
-                      <div className={`absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white shadow-2xs uppercase tracking-wide ${
-                        room.status === "available" ? "bg-green-600" : room.status === "maintenance" ? "bg-yellow-600" : "bg-slate-500"
-                      }`}>
-                        {room.status === "available" ? "พร้อมใช้งาน" : room.status === "maintenance" ? "บำรุงรักษา" : "ปิดใช้งาน"}
-                      </div>
                     </div>
 
                     {/* รายละเอียดเนื้อหาข้อมูลการจองห้อง */}
                     <div className="p-5 flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="mb-2 text-xs font-semibold text-blue-600 uppercase tracking-wide">
-                          {room.type}
-                        </div>
-                        <h3 className="mb-3 text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                          {room.name}
-                        </h3>
-
-                        {/* รายละเอียดชั้นและความจุ */}
-                        <div className="mb-4 space-y-2 text-sm text-slate-600">
-                          <div className="flex items-center gap-2">
-                            <MapPin size={15} className="text-slate-400 shrink-0" />
-                            <span className="font-medium">Floor {room.floor}</span>
+                        <div className="flex justify-between items-start gap-2 mb-3">
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-blue-600 transition-colors">
+                              {room.name}
+                            </h3>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">ID: {room.id}</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Users size={15} className="text-slate-400 shrink-0" />
-                            <span className="font-medium">{room.capacity} People Capacity</span>
-                          </div>
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0 shadow-2xs ${
+                            room.status === "available" ? "bg-green-500 text-white" : room.status === "maintenance" ? "bg-yellow-500 text-white" : "bg-slate-500 text-white"
+                          }`}>
+                            {room.status === "available" ? "พร้อมใช้งาน" : room.status === "maintenance" ? "บำรุงรักษา" : "ปิดใช้งาน"}
+                          </span>
                         </div>
 
-                        {/* อุปกรณ์อำนวยความสะดวก Amenities Icons */}
+                        <div className="space-y-2 mb-4 text-sm text-slate-600">
+                          <div className="flex justify-between border-b border-slate-50 pb-1.5">
+                            <span className="text-gray-400">ประเภท:</span>
+                            <span className="font-semibold text-slate-800">{room.type}</span>
+                          </div>
+
+                          <div className="flex justify-between border-b border-slate-50 pb-1.5">
+                            <span className="text-gray-400">พิกัด/ที่ตั้ง:</span>
+                            <span className="font-semibold text-slate-800">ชั้น {room.floor}</span>
+                          </div>
+
+                          <div className="flex justify-between pb-1.5">
+                            <span className="text-gray-400">ความจุ:</span>
+                            <span className="font-medium text-slate-800">{room.capacity} คน</span>
+                          </div>
+                        </div>
+
+                        {/* อุปกรณ์อำนวยความสะดวก Amenities */}
                         <div className="mb-5">
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                            สิ่งอำนวยความสะดวก:
+                          </p>
                           <div className="flex flex-wrap gap-1.5">
-                            {room.amenities.slice(0, 3).map((amenity) => {
-                              const lowerAmenity = amenity.toLowerCase();
-                              return (
-                                <div
-                                  key={amenity}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 border border-transparent transition-colors hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100"
-                                  title={amenity}
-                                >
-                                  {amenityIcons[lowerAmenity] || <Zap size={14} />}
-                                </div>
-                              );
-                            })}
-                            {room.amenities.length > 3 && (
-                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-150 text-[10px] font-bold text-slate-500">
-                                +{room.amenities.length - 3}
-                              </div>
-                            )}
+                            {room.amenities.map((amenity) => (
+                              <span
+                                key={amenity}
+                                className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium"
+                              >
+                                {amenity}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       </div>
 
                       {/* ปุ่ม Action ท้ายการ์ดแต่ละใบ */}
-                      <button className="w-full rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-700 active:scale-98 mt-auto shadow-2xs">
+                      <button className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700 active:scale-95 mt-auto shadow-sm">
                         View Details
                       </button>
                     </div>
